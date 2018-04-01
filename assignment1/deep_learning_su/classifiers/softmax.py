@@ -24,13 +24,32 @@ def softmax_loss_naive(W, X, y, reg):
   loss = 0.0
   dW = np.zeros_like(W)
 
+    
   #############################################################################
   # TODO: Compute the softmax loss and its gradient using explicit loops.     #
   # Store the loss in loss and the gradient in dW. If you are not careful     #
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+    
+  for i in range(num_train):
+    scores = X[i].dot(W)
+    scores -= np.max(scores)
+    scores = np.exp(scores) / np.sum(np.exp(scores), axis=0)
+    
+    for j in range(num_classes):
+      loss += (y[i] == j)*(-np.log(scores[j]))
+      dW[:, j] += X[i]*(scores[j] - (y[i] == j))
+        
+  loss = loss / num_train
+  loss += reg* np.sum(W*W)
+    
+  dW += reg* 2 * W
+  dW /= num_train
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -54,7 +73,31 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+
+  scores = X.dot(W)
+  scores -= np.max(scores,axis=1, keepdims=True)
+    
+  scores_exp = np.exp(scores) / np.sum(np.exp(scores), axis=1)[:,np.newaxis]
+
+  y_one_hot = np.zeros((num_train, num_classes))
+  y_one_hot[np.arange(num_train), y] = 1
+  
+  scores_exp_fil = scores_exp * y_one_hot
+  scores_exp_fil = np.ravel(scores_exp_fil)
+  scores_exp_fil = scores_exp_fil [scores_exp_fil>0]
+  
+  loss = -np.sum(np.log(scores_exp_fil))
+  loss = loss / num_train
+  loss += reg* np.sum(W*W)
+
+  dscores = scores_exp
+  dscores[np.arange(num_train),y] -= 1 # this is equal to (scores[j] - y_one_hot[i,j] )
+
+  dW = X.T.dot(dscores) / num_train
+    
+  dW += reg * 2 * W
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
